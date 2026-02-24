@@ -18,6 +18,7 @@ namespace EstudiodeCasoJosef.Controllers
             _facturaService = facturaService;
             _productoService = productoService;
         }
+
         [HttpGet("")]
         public IActionResult Index()
         {
@@ -33,34 +34,42 @@ namespace EstudiodeCasoJosef.Controllers
         }
 
         [HttpPost("agregar")]
-        public IActionResult Agregar(Factura factura, int productoId, int cantidad)
+        public IActionResult Agregar(
+        Factura factura,
+        int[] productosIds,
+        int[] cantidades)
         {
             ViewBag.Productos = _productoService.ObtenerTodos();
 
             if (!ModelState.IsValid)
                 return View(factura);
 
-            var producto = _productoService.ObtenerDetalle(productoId);
+            var detalles = new List<DetalleFactura>();
 
-            if (producto == null || cantidad <= 0)
+            for (int i = 0; i < productosIds.Length; i++)
             {
-                ModelState.AddModelError("", "Debe seleccionar un producto válido.");
-                return View(factura);
-            }
+                if (cantidades[i] <= 0) continue;
 
-            factura.Detalles = new List<DetalleFactura>
-            {
-                new DetalleFactura
+                var producto = _productoService.ObtenerDetalle(productosIds[i]);
+                if (producto == null) continue;
+
+                detalles.Add(new DetalleFactura
                 {
                     ProductoId = producto.Id,
                     NombreProducto = producto.Nombre,
-                    Cantidad = cantidad,
+                    Cantidad = cantidades[i],
                     PrecioUnitario = producto.Precio
-                }
-            };
+                });
+            }
 
+            if (detalles.Count == 0)
+            {
+                ModelState.AddModelError("", "Debe agregar al menos un producto.");
+                return View(factura);
+            }
+
+            factura.Detalles = detalles;
             _facturaService.CrearFactura(factura);
-
             return RedirectToAction("Index");
         }
 
@@ -68,7 +77,6 @@ namespace EstudiodeCasoJosef.Controllers
         public FileResult Descargar(int id)
         {
             var factura = _facturaService.ObtenerDetalle(id);
-
             if (factura == null)
             {
                 return File(
@@ -78,10 +86,10 @@ namespace EstudiodeCasoJosef.Controllers
             string texto = "FACTURA\n";
             texto += "Cliente: " + factura.NombreCliente + "\n";
             texto += "Fecha: " + factura.Fecha + "\n\n";
+
             foreach (var item in factura.Detalles)
             {
-                texto += item.NombreProducto +
-                " - Cantidad: " + item.Cantidad + " - Precio: " + item.PrecioUnitario + " - Total: " + (item.Cantidad * item.PrecioUnitario) + "\n";
+                texto += item.NombreProducto +" - Cantidad: " + item.Cantidad +" - Precio: " + item.PrecioUnitario + " - Total: " + (item.Cantidad * item.PrecioUnitario) + "\n";
             }
 
             texto += "\nSubtotal: " + factura.Subtotal;
