@@ -1,0 +1,74 @@
+﻿@model EstudiodeCasoJosef.Data.Factura
+
+@{
+    ViewData["Title"] = "Nueva Factura";
+}
+
+<h2>Nueva Factura</h2>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger">
+        <ul>
+            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <li>@error.ErrorMessage</li>
+            }
+        </ul>
+    </div>
+}
+
+<form asp-action="Agregar" method="post">
+
+    <div class="mb-3">
+        <label asp-for="NombreCliente" class="form-label">Nombre del Cliente</label>
+        <input asp-for="NombreCliente" class="form-control" />
+        <span asp-validation-for="NombreCliente" class="text-danger"></span>
+    </div>
+
+    <hr />
+
+    <h5>Productos Disponibles</h5>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Precio</th>
+                <th>Cantidad</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var producto in ViewBag.Productos)
+            {
+                <tr>
+                    <td>
+                        <input type="hidden" name="productoId" value="@producto.Id" />
+                        @producto.Nombre
+                    </td>
+                    <td>₡ @producto.Precio</td>
+                    <td>
+                        <input type="number"
+                               name="cantidad"
+                               min="0"
+                               value="0"
+                               class="form-control" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <button type="submit" class="btn btn-primary">
+        Guardar Factura
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Cancelar
+    </a>
+
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
